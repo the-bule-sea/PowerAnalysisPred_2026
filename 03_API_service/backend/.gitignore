@@ -1,0 +1,24 @@
+*.pyc
+__pycache__/
+*.py[cod]
+*$py.class
+# 虚拟环境
+venv/
+env/
+ENV/
+# 环境变量文件
+.env
+# 数据库文件
+*.db
+instance/
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+# Flask
+instance/*
+.webassets-cache
+# 模型文件（太大）
+*.h5
+*.pkl
