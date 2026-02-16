@@ -1,117 +1,318 @@
 <template>
-  <div class="cluster-page">
-    <nav class="navbar">
-      <h1 class="logo">用电分析平台</h1>
-      <div class="nav-links">
-        <router-link to="/dashboard" class="nav-link">首页</router-link>
-        <router-link to="/cluster" class="nav-link">用户聚类</router-link>
-        <router-link to="/predict" class="nav-link">行业预测</router-link>
-        <router-link to="/map" class="nav-link">电力地图</router-link>
-        <button @click="handleLogout" class="logout-btn">退出</button>
+  <MainLayout>
+    <div class="page-header">
+      <div class="header-content">
+        <h2>用户用电行为聚类分析</h2>
+        <p>基于K-Means算法（K=3），将用户群体划分为不同用电模式，辅助差异化服务</p>
       </div>
-    </nav>
-    <div class="content">
-      <h2>用户聚类分析</h2>
-      <div class="placeholder">
-        <p>此页面将展示K-Means聚类结果和用户画像</p>
-        <p>TODO: 集成ECharts图表展示聚类中心曲线和统计分布</p>
+      <div class="header-actions">
+        <button class="btn btn-primary" @click="loadData" :disabled="loading">
+          {{ loading ? '加载中...' : '刷新数据' }}
+        </button>
       </div>
     </div>
-  </div>
+
+    <!-- 统计卡片 -->
+    <div class="stats-row">
+      <div class="stat-card card" v-for="stat in stats" :key="stat.label_id">
+        <div class="stat-label">{{ stat.name }}</div>
+        <div class="stat-value">{{ stat.value }}</div>
+        <div class="stat-bar" :style="{ width: (stat.value / totalUsers * 100) + '%', background: colors[stat.label_id] }"></div>
+      </div>
+    </div>
+
+    <!-- 图表容器 -->
+    <div class="charts-container">
+      <div class="chart-wrapper card">
+        <div class="chart-header">
+          <h3>聚类中心形态曲线</h3>
+          <p>展示三种典型用户群的年度日用电量归一化曲线</p>
+        </div>
+        <div ref="lineChartRef" class="chart-box"></div>
+      </div>
+      
+      <div class="chart-wrapper card">
+        <div class="chart-header">
+          <h3>用户分布占比</h3>
+          <p>各类别用户数量统计</p>
+        </div>
+        <div ref="pieChartRef" class="chart-box pie-chart"></div>
+      </div>
+    </div>
+  </MainLayout>
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router'
-// TODO: 引入 getClusterCenters, getClusterStats
+import { ref, onMounted, computed } from 'vue'
+import * as echarts from 'echarts'
+import MainLayout from '@/components/MainLayout.vue'
+import { getClusterCenters, getClusterStats } from '@/api/cluster'
 
-const router = useRouter()
+const lineChartRef = ref(null)
+const pieChartRef = ref(null)
+const stats = ref([])
+const loading = ref(false)
+const centers = ref(null)
 
-const handleLogout = () => {
-  localStorage.removeItem('token')
-  router.push('/login')
+// 定义颜色与参考图一致
+const colors = ['#FF6B6B', '#4ECDC4', '#9B59B6']
+const classNames = ['Class 0', 'Class 1', 'Class 2']
+
+const totalUsers = computed(() => {
+  return stats.value.reduce((sum, s) => sum + s.value, 0)
+})
+
+// 加载数据
+const loadData = async () => {
+  loading.value = true
+  try {
+    // 并行请求两个接口
+    const [centersRes, statsRes] = await Promise.all([
+      getClusterCenters(),
+      getClusterStats()
+    ])
+    
+    centers.value = centersRes.data
+    stats.value = statsRes.data
+    
+    // 渲染图表
+    renderLineChart()
+    renderPieChart()
+  } catch (error) {
+    console.error('加载数据失败:', error)
+    alert('加载聚类数据失败，请检查后端服务')
+  } finally {
+    loading.value = false
+  }
 }
 
-// TODO: 加载聚类数据并使用ECharts渲染
+// 渲染折线图
+const renderLineChart = () => {
+  if (!lineChartRef.value || !centers.value) return
+  
+  const chart = echarts.init(lineChartRef.value)
+  
+  const { dates, centers: centerData, counts } = centers.value
+  
+  const series = centerData.map((data, index) => ({
+    name: `${classNames[index]} (Count: ${counts[index]})`,
+    type: 'line',
+    data: data,
+    smooth: true,
+    lineStyle: {
+      width: 2,
+      color: colors[index]
+    },
+    itemStyle: {
+      color: colors[index]
+    },
+    showSymbol: false
+  }))
+  
+  const option = {
+    title: {
+      text: '用户群体用电行为模式聚类分析 (K=3)',
+      left: 'center',
+      textStyle: {
+        fontSize: 16,
+        fontWeight: 'normal'
+      }
+    },
+    tooltip: {
+      trigger: 'axis',
+      axisPointer: {
+        type: 'line'
+      }
+    },
+    legend: {
+      data: series.map(s => s.name),
+      top: 35,
+      textStyle: {
+        fontSize: 12
+      }
+    },
+    grid: {
+      left: '5%',
+      right: '5%',
+      bottom: '10%',
+      top: 80,
+      containLabel: true
+    },
+    xAxis: {
+      type: 'category',
+      data: dates,
+      boundaryGap: false,
+      axisLabel: {
+        interval: 30,
+        rotate: 0,
+        fontSize: 11
+      },
+      name: '日期',
+      nameLocation: 'center',
+      nameGap: 35
+    },
+    yAxis: {
+      type: 'value',
+      name: '归一化用电量 (0~1)',
+      nameLocation: 'center',
+      nameGap: 45,
+      axisLabel: {
+        formatter: '{value}'
+      }
+    },
+    series: series
+  }
+  
+  chart.setOption(option)
+  
+  // 响应式调整
+  window.addEventListener('resize', () => chart.resize())
+}
+
+// 渲染饼图
+const renderPieChart = () => {
+  if (!pieChartRef.value || !stats.value.length) return
+  
+  const chart = echarts.init(pieChartRef.value)
+  
+  const option = {
+    tooltip: {
+      trigger: 'item',
+      formatter: '{b}: {c} ({d}%)'
+    },
+    legend: {
+      orient: 'vertical',
+      left: 'left',
+      top: 'center'
+    },
+    series: [
+      {
+        name: '用户分布',
+        type: 'pie',
+        radius: ['40%', '70%'],
+        avoidLabelOverlap: true,
+        itemStyle: {
+          borderRadius: 8,
+          borderColor: '#fff',
+          borderWidth: 2
+        },
+        label: {
+          show: true,
+          formatter: '{b}\n{d}%'
+        },
+        emphasis: {
+          label: {
+            show: true,
+            fontSize: 16,
+            fontWeight: 'bold'
+          }
+        },
+        data: stats.value.map((item, index) => ({
+          value: item.value,
+          name: item.name,
+          itemStyle: {
+            color: colors[index]
+          }
+        }))
+      }
+    ]
+  }
+  
+  chart.setOption(option)
+  
+  window.addEventListener('resize', () => chart.resize())
+}
+
+onMounted(() => {
+  loadData()
+})
 </script>
 
 <style scoped>
-.cluster-page {
-  width: 100%;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.navbar {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 15px 30px;
+.page-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  margin-bottom: 24px;
 }
 
-.logo {
-  font-size: 24px;
-  font-weight: bold;
+.header-content h2 {
+  font-size: 20px;
+  color: var(--text-primary);
+  margin-bottom: 4px;
 }
 
-.nav-links {
-  display: flex;
-  gap: 20px;
-  align-items: center;
+.header-content p {
+  color: var(--text-secondary);
+  font-size: 14px;
 }
 
-.nav-link {
-  color: white;
-  text-decoration: none;
-  padding: 8px 16px;
-  border-radius: 5px;
-  transition: background 0.3s;
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  margin-bottom: 24px;
 }
 
-.nav-link:hover,
-.nav-link.router-link-active {
-  background: rgba(255, 255, 255, 0.2);
+.stat-card {
+  position: relative;
+  padding: 20px;
+  overflow: hidden;
 }
 
-.logout-btn {
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid white;
-  color: white;
-  padding: 8px 16px;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background 0.3s;
+.stat-label {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
 }
 
-.logout-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
+.stat-value {
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
-.content {
-  flex: 1;
-  padding: 40px;
-  background: #f5f5f5;
+.stat-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 4px;
+  transition: width 0.5s ease;
 }
 
-.content h2 {
-  text-align: center;
-  color: #333;
-  margin-bottom: 30px;
+.charts-container {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
 }
 
-.placeholder {
-  background: white;
-  padding: 40px;
-  border-radius: 10px;
-  text-align: center;
+.chart-wrapper {
+  padding: 24px;
 }
 
-.placeholder p {
-  color: #666;
-  margin: 10px 0;
+.chart-header {
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 12px;
+}
+
+.chart-header h3 {
   font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.chart-header p {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.chart-box {
+  width: 100%;
+  height: 500px;
+}
+
+.pie-chart {
+  height: 400px;
 }
 </style>

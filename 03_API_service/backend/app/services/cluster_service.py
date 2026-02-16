@@ -23,20 +23,11 @@ class ClusterService:
                 'center_data_sorted.json'
             )
             
-            # TODO: 实际加载JSON文件
-            # with open(data_path, 'r', encoding='utf-8') as f:
-            #     center_data = json.load(f)
+            # 实际加载JSON文件
+            with open(data_path, 'r', encoding='utf-8') as f:
+                center_data = json.load(f)
             
-            # 示例数据结构
-            return {
-                "dates": ["2017/05/01", "2017/05/02"],  # TODO: 实际数据
-                "centers": [
-                    [0.12, 0.15],  # 类别0
-                    [0.45, 0.48],  # 类别1
-                    [0.05, 0.05]   # 类别2
-                ],
-                "counts": [605, 54, 341]
-            }
+            return center_data
         except Exception as e:
             raise Exception(f"读取聚类中心数据失败: {str(e)}")
     
@@ -49,11 +40,22 @@ class ClusterService:
             list: 各类别的统计信息
         """
         try:
-            # TODO: 从数据库或文件读取实际统计数据
+            # 从聚类中心数据中读取counts
+            data_path = os.path.join(
+                current_app.config['DATA_PRE_PATH'],
+                'center_data_sorted.json'
+            )
+            
+            with open(data_path, 'r', encoding='utf-8') as f:
+                center_data = json.load(f)
+            
+            counts = center_data.get('counts', [341, 605, 54])
+            
+            # 根据图片中的类别标签定义
             return [
-                {"name": "中能耗常规型", "value": 341, "label_id": 0},
-                {"name": "低能耗平稳型", "value": 605, "label_id": 1},
-                {"name": "高能耗波动型", "value": 54, "label_id": 2}
+                {"name": "Class 0 - 中能耗常规型", "value": counts[0], "label_id": 0},
+                {"name": "Class 1 - 低能耗平稳型", "value": counts[1], "label_id": 1},
+                {"name": "Class 2 - 高能耗波动型", "value": counts[2], "label_id": 2}
             ]
         except Exception as e:
             raise Exception(f"获取聚类统计数据失败: {str(e)}")

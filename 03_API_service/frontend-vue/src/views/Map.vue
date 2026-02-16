@@ -1,117 +1,89 @@
 <template>
-  <div class="map-page">
-    <nav class="navbar">
-      <h1 class="logo">用电分析平台</h1>
-      <div class="nav-links">
-        <router-link to="/dashboard" class="nav-link">首页</router-link>
-        <router-link to="/cluster" class="nav-link">用户聚类</router-link>
-        <router-link to="/predict" class="nav-link">行业预测</router-link>
-        <router-link to="/map" class="nav-link">电力地图</router-link>
-        <button @click="handleLogout" class="logout-btn">退出</button>
+  <MainLayout>
+    <div class="map-page-wrapper">
+      <div class="map-toolbar">
+        <input type="text" placeholder="搜索区域或用户ID..." class="search-input" />
+        <div class="filter-group">
+          <button class="filter-btn active">全部用户</button>
+          <button class="filter-btn">高能耗</button>
+          <button class="filter-btn">低能耗</button>
+        </div>
       </div>
-    </nav>
-    <div class="content">
-      <h2>电力地图可视化</h2>
-      <div class="placeholder">
-        <p>此页面将展示用户地理分布</p>
-        <p>TODO: 集成Leaflet地图和用户坐标点</p>
+      <div class="map-container card">
+        <div class="leaflet-placeholder">
+          <span>Leaflet 地图加载区域</span>
+        </div>
       </div>
     </div>
-  </div>
+  </MainLayout>
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router'
-// TODO: 引入 getMapPoints
-
-const router = useRouter()
-
-const handleLogout = () => {
-  localStorage.removeItem('token')
-  router.push('/login')
-}
-
-// TODO: 加载地图数据并渲染Leaflet地图
+import MainLayout from '@/components/MainLayout.vue'
 </script>
 
 <style scoped>
-.map-page {
-  width: 100%;
-  height: 100vh;
+.map-page-wrapper {
+  height: 100%;
   display: flex;
   flex-direction: column;
 }
 
-.navbar {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  padding: 15px 30px;
+.map-toolbar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-}
-
-.logo {
-  font-size: 24px;
-  font-weight: bold;
-}
-
-.nav-links {
-  display: flex;
-  gap: 20px;
-  align-items: center;
-}
-
-.nav-link {
-  color: white;
-  text-decoration: none;
-  padding: 8px 16px;
-  border-radius: 5px;
-  transition: background 0.3s;
-}
-
-.nav-link:hover,
-.nav-link.router-link-active {
-  background: rgba(255, 255, 255, 0.2);
-}
-
-.logout-btn {
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid white;
-  color: white;
-  padding: 8px 16px;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background 0.3s;
-}
-
-.logout-btn:hover {
-  background: rgba(255, 255, 255, 0.3);
-}
-
-.content {
-  flex: 1;
-  padding: 40px;
-  background: #f5f5f5;
-}
-
-.content h2 {
-  text-align: center;
-  color: #333;
-  margin-bottom: 30px;
-}
-
-.placeholder {
+  margin-bottom: 16px;
   background: white;
-  padding: 40px;
-  border-radius: 10px;
-  text-align: center;
+  padding: 12px 16px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
 }
 
-.placeholder p {
-  color: #666;
-  margin: 10px 0;
-  font-size: 16px;
+.search-input {
+  width: 300px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+.filter-group {
+  display: flex;
+  gap: 8px;
+}
+
+.filter-btn {
+  padding: 6px 16px;
+  border: 1px solid var(--border-color);
+  background: white;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 13px;
+  transition: all 0.2s;
+  color: var(--text-regular);
+}
+
+.filter-btn.active {
+  background: var(--primary-color);
+  color: white;
+  border-color: var(--primary-color);
+}
+
+.map-container {
+  flex: 1;
+  min-height: 0;
+  padding: 0; /* 地图通常不需要内边距 */
+  overflow: hidden;
+  position: relative;
+}
+
+.leaflet-placeholder {
+  width: 100%;
+  height: 100%;
+  background: #eef2f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-placeholder);
 }
 </style>
