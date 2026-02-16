@@ -4,6 +4,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Login from '@/views/Login.vue'
 import Dashboard from '@/views/Dashboard.vue'
+import Query from '@/views/Query.vue'
 import Cluster from '@/views/Cluster.vue'
 import Predict from '@/views/Predict.vue'
 import Map from '@/views/Map.vue'
@@ -22,6 +23,12 @@ const routes = [
         path: '/dashboard',
         name: 'Dashboard',
         component: Dashboard,
+        meta: { requiresAuth: true }
+    },
+    {
+        path: '/query',
+        name: 'Query',
+        component: Query,
         meta: { requiresAuth: true }
     },
     {

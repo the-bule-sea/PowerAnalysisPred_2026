@@ -11,6 +11,10 @@
           <span class="icon"></span>
           <span class="text">仪表盘</span>
         </router-link>
+        <router-link to="/query" class="menu-item" active-class="active">
+          <span class="icon"></span>
+          <span class="text">用户查询</span>
+        </router-link>
         <router-link to="/cluster" class="menu-item" active-class="active">
           <span class="icon"></span>
           <span class="text">用户聚类</span>
@@ -59,6 +63,7 @@ const route = useRoute()
 
 const pageTitles = {
   'Dashboard': '综合仪表盘',
+  'Query': '用户数据查询',
   'Cluster': '用户用电行为聚类',
   'Predict': '行业用电趋势预测',
   'Map': '区域电力分布'

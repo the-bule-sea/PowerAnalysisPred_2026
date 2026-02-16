@@ -212,6 +212,104 @@
     ]
 }
 
+
 ```
 
+---
 
+## 7. 用户数据管理模块 (Query Module)
+
+### 7.1 获取用户列表（分页）
+
+**功能**: 查询数据库中的用户数据列表，支持分页和关键词搜索。
+
+**URL**: `/query/users`
+
+**Method**: `GET`
+
+**Query Parameters**:
+
+| 参数名    | 类型   | 必填 | 默认值 | 说明                               |
+| --------- | ------ | --- | ------ | ---------------------------------- |
+| page      | int    | 否  | 1      | 页码（从1开始）                    |
+| page_size | int    | 否  | 10     | 每页数量（1-100之间）              |
+| keyword   | string | 否  | -      | 搜索关键词，支持用采ID和电表ID搜索 |
+
+**Response Example**:
+
+```json
+{
+    "code": 200,
+    "msg": "success",
+    "data": {
+        "list": [
+            {
+                "id": 1,
+                "yc_id": "10001479",
+                "meter_id": "7351864548",
+                "build_date": "2000-02-01 00:00:00",
+                "trade_code": "城镇居民",
+                "elec_type_code": "城镇居民生活用电",
+                "cons_sort_code": "低压居民",
+                "volt_code": "交流220V",
+                "contract_cap": 3,
+                "userpoint_x": 121.4737,
+                "userpoint_y": 31.2304
+            }
+        ],
+        "total": 1000,
+        "page": 1,
+        "page_size": 10,
+        "total_pages": 100
+    }
+}
+```
+
+### 7.2 上传CSV文件导入用户数据
+
+**功能**: 通过CSV文件批量导入用户数据到数据库。
+
+**URL**: `/query/upload-csv`
+
+**Method**: `POST`
+
+**Content-Type**: `multipart/form-data`
+
+**Request Body**:
+
+| 字段名 | 类型 | 必填 | 说明              |
+| ------ | ---- | --- | ----------------- |
+| file   | File | 是  | CSV文件（.csv格式）|
+
+**CSV文件格式要求**:
+
+CSV文件应包含以下列头（英文或中文映射）：
+`yc_id, meter_id, build_date, trade_code, elec_type_code, cons_sort_code, volt_code, contract_cap, userpoint_x, userpoint_y`
+
+**Response Example**:
+
+```json
+{
+    "code": 200,
+    "msg": "数据导入完成",
+    "data": {
+        "success": true,
+        "total": 1000,
+        "success_count": 980,
+        "error_count": 20,
+        "errors": ["第15行: 用采id为空"]
+    }
+}
+```
+
+---
+
+## 8. 错误码说明
+
+| code | 说明                         |
+| ---- | ---------------------------- |
+| 200  | 请求成功                     |
+| 400  | 参数错误                     |
+| 401  | 未授权                       |
+| 404  | 资源不存在                   |
+| 500  | 服务器内部错误               |

@@ -27,8 +27,9 @@ def create_app(config_name='default'):
     JWTManager(app)
     
     # 注册蓝图
-    from app.routes import auth_bp, cluster_bp, industry_bp, map_bp
+    from app.routes import auth_bp, query_bp, cluster_bp, industry_bp, map_bp
     app.register_blueprint(auth_bp)
+    app.register_blueprint(query_bp)
     app.register_blueprint(cluster_bp)
     app.register_blueprint(industry_bp)
     app.register_blueprint(map_bp)
