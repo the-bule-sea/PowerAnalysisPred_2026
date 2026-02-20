@@ -6,6 +6,7 @@ import Login from '@/views/Login.vue'
 import Dashboard from '@/views/Dashboard.vue'
 import Query from '@/views/Query.vue'
 import Cluster from '@/views/Cluster.vue'
+import IndustryAnalysis from '@/views/IndustryAnalysis.vue'
 import Predict from '@/views/Predict.vue'
 import Map from '@/views/Map.vue'
 
@@ -35,6 +36,12 @@ const routes = [
         path: '/cluster',
         name: 'Cluster',
         component: Cluster,
+        meta: { requiresAuth: true }
+    },
+    {
+        path: '/industry',
+        name: 'IndustryAnalysis',
+        component: IndustryAnalysis,
         meta: { requiresAuth: true }
     },
     {

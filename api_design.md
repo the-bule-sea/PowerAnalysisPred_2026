@@ -178,6 +178,115 @@
 
 ```
 
+### 5.3 获取行业分类及其数量
+
+**功能**: 获取一级行业和二级行业的分组统计信息，用于 ECharts 双层嵌套饼图。
+**URL**: `/industry/categories`
+**Method**: `GET`
+
+**Response Example**:
+
+```json
+{
+    "code": 200,
+    "msg": "success",
+    "data": {
+        "level1": [
+            { "name": "住宿业", "count": 120 },
+            { "name": "房地产业", "count": 85 },
+            { "name": "道路运输业", "count": 200 }
+        ],
+        "level2": [
+            { "name": "旅游饭店", "parent": "住宿业", "count": 80 },
+            { "name": "房地产中介服务", "parent": "房地产业", "count": 45 },
+            { "name": "道路货物运输", "parent": "道路运输业", "count": 150 }
+        ]
+    }
+}
+```
+
+### 5.4 导入行业用电量CSV
+
+**功能**: 上传宽表格式的CSV文件（每日用电量），自动转为长表存入数据库。
+**URL**: `/industry/upload-csv`
+**Method**: `POST`
+**Content-Type**: `multipart/form-data`
+
+**Request Body**:
+
+| 字段名 | 类型 | 必填 | 说明 |
+| ------ | ---- | --- | ---- |
+| file | File | 是 | CSV文件（宽表格式，含 v2020_05_01 等日期列） |
+
+**CSV文件格式要求**:
+
+列头应包含维度列和日期列：
+`elec_type_code, level1, trade_code, cons_sort_code, yc_id, cons_id, mp_id, start_date, v2020_05_01, v2020_05_02, ..., v2021_04_30`
+
+**Response Example**:
+
+```json
+{
+    "code": 200,
+    "msg": "数据导入完成",
+    "data": {
+        "success": true,
+        "total": 365000,
+        "success_count": 364980,
+        "error_count": 20,
+        "date_columns": 366,
+        "errors": ["行 15: 数据格式错误"]
+    }
+}
+```
+
+### 5.5 获取行业用电量时间序列
+
+**功能**: 获取某行业按日聚合的用电量时间序列，用于面积图/折线图展示。支持多行业对比。
+**URL**: `/industry/timeseries`
+**Method**: `GET`
+
+**Query Parameters**:
+
+| 参数名 | 类型 | 必填 | 默认值 | 说明 |
+| ------ | ---- | --- | ------ | ---- |
+| level | int | 否 | 1 | 层级 (1=一级行业, 2=二级行业) |
+| name | string | 是 | - | 行业名称，多个用逗号分隔 |
+| start_date | string | 否 | - | 起始日期 (YYYY-MM-DD) |
+| end_date | string | 否 | - | 结束日期 (YYYY-MM-DD) |
+
+**单行业 Response Example**:
+
+```json
+{
+    "code": 200,
+    "msg": "success",
+    "data": {
+        "dates": ["2020-05-01", "2020-05-02", "2020-05-03"],
+        "values": [72833.59, 53860.84, 51362.38],
+        "name": "道路运输业",
+        "level": 1
+    }
+}
+```
+
+**多行业 Response Example** (name=道路货物运输,公路旅客运输,道路运输辅助活动):
+
+```json
+{
+    "code": 200,
+    "msg": "success",
+    "data": {
+        "dates": ["2020-05-01", "2020-05-02", "2020-05-03"],
+        "series": [
+            { "name": "道路货物运输", "values": [30000, 28000, 27000] },
+            { "name": "公路旅客运输", "values": [25000, 22000, 20000] },
+            { "name": "道路运输辅助活动", "values": [17833, 13860, 14362] }
+        ]
+    }
+}
+```
+
 ---
 
 ## 6. 电力地图可视化模块 (Map Module)

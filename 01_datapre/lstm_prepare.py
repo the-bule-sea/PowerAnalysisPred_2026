@@ -146,3 +146,10 @@ plt.tight_layout()
 # 保存图片用于论文
 plt.savefig(f'lstm_prediction_{TARGET_INDUSTRY}.png', dpi=300)
 plt.show()
+
+# 在 lstm_prepare.py 末尾加这几行
+total_len = len(df_industry)
+train_size = int(total_len * 0.8)
+print(f"总天数: {total_len}")
+print(f"测试集起始日期: {df_industry['data_date'].iloc[train_size]}")
+print(f"测试集结束日期: {df_industry['data_date'].iloc[-1]}")
