@@ -132,3 +132,15 @@ def get_industry_timeseries():
     
     except Exception as e:
         return server_error(f"获取时序数据失败: {str(e)}")
+
+
+@industry_bp.route('/clear-data', methods=['DELETE'])
+def clear_industry_data():
+    """
+    清空所有行业数据 (5.6)
+    """
+    try:
+        IndustryService.delete_all_data()
+        return success_response(msg="行业数据已清空")
+    except Exception as e:
+        return server_error(f"清空数据失败: {str(e)}")

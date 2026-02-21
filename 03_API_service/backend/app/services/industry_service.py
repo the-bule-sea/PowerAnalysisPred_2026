@@ -242,3 +242,18 @@ class IndustryService:
         except Exception as e:
             db.session.rollback()
             raise Exception(f"CSV 导入失败: {str(e)}")
+
+    @staticmethod
+    def delete_all_data():
+        """
+        删除所有行业数据 (5.6)
+        """
+        try:
+            # 清空 IndustryDaily 表
+            IndustryDaily.query.delete()
+            db.session.commit()
+            return True
+        except Exception as e:
+            db.session.rollback()
+            raise Exception(f"删除数据失败: {str(e)}")
+

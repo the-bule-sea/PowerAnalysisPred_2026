@@ -9,6 +9,9 @@
         </div>
         <div class="actions">
           <input type="file" ref="csvFileRef" accept=".csv" style="display: none" @change="handleFileUpload">
+          <button class="btn btn-secondary" @click="handleClearData" :disabled="isUploading" style="margin-right: 12px;">
+            清空数据
+          </button>
           <button class="btn btn-primary" @click="triggerUpload" :disabled="isUploading">
             {{ isUploading ? '导入中...' : '导入 CSV 数据' }}
           </button>
@@ -286,6 +289,25 @@ const renderLineChart2 = (dates, seriesDataList) => {
 
 const triggerUpload = () => {
   csvFileRef.value.click()
+}
+
+const handleClearData = async () => {
+  if (!confirm('确定要清空所有已导入的一级和二级行业用电数据吗？此操作不可撤销。')) return
+
+  try {
+    const res = await fetch('http://localhost:5000/api/industry/clear-data', {
+      method: 'DELETE'
+    })
+    const json = await res.json()
+    if (json.code === 200) {
+      alert('数据已成功清空')
+      fetchCategories() // 刷新图表，会切换回 Mock 数据
+    } else {
+      alert(`清空失败: ${json.msg}`)
+    }
+  } catch (error) {
+    alert('请求失败，请检查后端服务是否已启动')
+  }
 }
 
 const handleFileUpload = async (event) => {

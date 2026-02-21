@@ -287,6 +287,22 @@
 }
 ```
 
+### 5.6 清空行业数据
+
+**功能**: 清空所有行业用电量数据，用于数据重置。
+**URL**: `/industry/clear-data`
+**Method**: `DELETE`
+
+**Response Example**:
+
+```json
+{
+    "code": 200,
+    "msg": "行业数据已清空",
+    "data": null
+}
+```
+
 ---
 
 ## 6. 电力地图可视化模块 (Map Module)
