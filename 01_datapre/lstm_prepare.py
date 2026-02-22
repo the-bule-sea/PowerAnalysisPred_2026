@@ -5,8 +5,8 @@ import joblib
 import os
 
 # 1. 配置文件路径和参数
-INPUT_FILE = 'industry_cleaned_fixed_v4.csv' # 请替换为你下载的 Spark 结果文件路径
-TARGET_INDUSTRY = '住宿业'         # 就拿你截图里的住宿业来练手
+INPUT_FILE = 'industry_cleaned_fixed_v5.csv' # 请替换为你下载的 Spark 结果文件路径
+TARGET_INDUSTRY = '道路运输业'         # 就拿你截图里的住宿业来练手
 TIME_STEP = 30                    # 滑动窗口大小：用过去30天预测第31天
 
 def create_dataset(dataset, time_step=1):
