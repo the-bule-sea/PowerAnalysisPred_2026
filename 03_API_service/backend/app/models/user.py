@@ -27,6 +27,10 @@ class UserData(db.Model):
     # 地理位置
     userpoint_x = db.Column(db.Float, nullable=True, comment='经度')
     userpoint_y = db.Column(db.Float, nullable=True, comment='纬度')
+
+    # 地图冗余快照字段（由迁移脚本从 electricity_data 聚合填充）
+    cluster_type = db.Column(db.Integer, nullable=True, comment='聚类类别 (0/1/2)')
+    total_value = db.Column(db.Float, nullable=True, comment='年总用电量(千瓦时)')
     
     # 关联关系：一个用户对应多条电量记录
     electricity_records = db.relationship('ElectricityData', backref='user', lazy='dynamic')
@@ -43,7 +47,9 @@ class UserData(db.Model):
             'volt_code': self.volt_code,
             'contract_cap': self.contract_cap,
             'userpoint_x': self.userpoint_x,
-            'userpoint_y': self.userpoint_y
+            'userpoint_y': self.userpoint_y,
+            'cluster_type': self.cluster_type,
+            'total_value': self.total_value
         }
     
     def __repr__(self):

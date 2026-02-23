@@ -1,0 +1,14 @@
+Tables: ['user_data', 'electricity_data', 'industry_data', 'industry_daily']
+  user_data: 1000 rows
+  electricity_data: 0 rows
+  industry_data: 0 rows
+  industry_daily: 398580 rows
+
+Users with coords: 1000
+
+Sample user_data:
+  ('14,022,958', 121.5529446, 31.25146286, '城镇居民')
+  ('11,844,746', 121.8409914, 31.04107638, '城镇居民')
+  ('11,406,979', 121.7806385, 31.05976306, '城镇居民')
+  ('17,795,198', 121.5339082, 31.20476771, '城镇居民')
+  ('5,048,513', 121.5085288, 31.15705056, '城镇居民')
