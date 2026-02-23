@@ -149,23 +149,26 @@ const renderChart = (data) => {
   }
   if (!chart.value) return
 
-  // 合并历史 + 预测日期轴
-  const allDates = [...(data.history_dates || []), ...data.dates]
-  const historyLen = (data.history_dates || []).length
-  const predictLen = data.dates.length
+  const actualDates = data.actual_dates || []
+  const actualValues = data.actual_values || []
+  const predictDates = data.predict_dates || []
+  const predictValues = data.predict_values || []
 
-  // 历史数据系列 (实线)
-  const historyValues = [...(data.history_values || []), ...Array(predictLen).fill(null)]
-  // 预测数据系列 (虚线)，首位与历史末位衔接
-  const predictValues = [
-    ...Array(historyLen > 0 ? historyLen - 1 : 0).fill(null),
-    ...(historyLen > 0 ? [data.history_values[data.history_values.length - 1]] : []),
-    ...data.values
-  ]
+  // 合并历史 + 预测日期轴并去重排序
+  const allDates = [...new Set([...actualDates, ...predictDates])].sort()
+
+  const actualMap = {}
+  actualDates.forEach((d, i) => actualMap[d] = actualValues[i])
+  const predictMap = {}
+  predictDates.forEach((d, i) => predictMap[d] = predictValues[i])
+
+  // 生成对齐后的 Y 轴数据序列
+  const finalActualSeries = allDates.map(d => (actualMap[d] !== undefined ? actualMap[d] : null))
+  const finalPredictSeries = allDates.map(d => (predictMap[d] !== undefined ? predictMap[d] : null))
 
   const option = {
     tooltip: { trigger: 'axis' },
-    legend: { data: ['历史用电量', '预测用电量'], icon: 'circle', top: 0 },
+    legend: { data: ['历史用电量', 'LSTM 预测用电量'], icon: 'circle', top: 0 },
     grid: { left: '3%', right: '4%', bottom: '15%', top: '15%', containLabel: true },
     xAxis: { type: 'category', boundaryGap: false, data: allDates },
     yAxis: { type: 'value', name: '用电量 (Wh)' },
@@ -176,27 +179,26 @@ const renderChart = (data) => {
       {
         name: '历史用电量',
         type: 'line',
-        data: historyValues,
+        data: finalActualSeries,
         smooth: true,
-        itemStyle: { color: '#7b9ce1' },
+        itemStyle: { color: '#91cc75' },  // 浅绿色
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(123, 156, 225, 0.35)' },
-            { offset: 1, color: 'rgba(123, 156, 225, 0)' }
+            { offset: 0, color: 'rgba(145, 204, 117, 0.5)' },
+            { offset: 1, color: 'rgba(145, 204, 117, 0.1)' }
           ])
         }
       },
       {
-        name: '预测用电量',
+        name: 'LSTM 预测用电量',
         type: 'line',
-        data: predictValues,
+        data: finalPredictSeries,
         smooth: true,
-        lineStyle: { type: 'dashed' },
-        itemStyle: { color: '#F5C448' },
+        itemStyle: { color: '#7b9ce1' }, // 蓝紫色
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(245, 196, 72, 0.35)' },
-            { offset: 1, color: 'rgba(245, 196, 72, 0)' }
+            { offset: 0, color: 'rgba(123, 156, 225, 0.5)' },
+            { offset: 1, color: 'rgba(123, 156, 225, 0.1)' }
           ])
         }
       }
