@@ -4,43 +4,70 @@
 """
 from app.models import db
 from app.models.user import UserData
-from app.models.electricity import ElectricityData
+
+
 class MapService:
     """地图服务类"""
-    
+
+    # 聚类标签映射
+    CLUSTER_LABELS = {
+        0: '中能耗常规型',
+        1: '低能耗平稳型',
+        2: '高能耗波动型',
+    }
+
     @staticmethod
-    def get_user_points(limit=1000):
+    def get_user_points(limit=1000, cluster_type=None,
+                        min_lng=None, max_lng=None,
+                        min_lat=None, max_lat=None):
         """
-        获取用户坐标点集
-        
+        获取用户坐标点集（直接读 user_data 冗余字段，单表查询）
+
         Args:
-            limit: 限制返回数量
-        
+            limit      : 最大返回数量，默认 1000
+            cluster_type: 筛选指定聚类类别 (0/1/2)，None 表示全部
+            min_lng/max_lng/min_lat/max_lat: 地图视口边界框过滤
+
         Returns:
-            list: 用户坐标点列表
+            list[dict]: 地图打点数据列表
         """
         try:
-            # TODO: 优化查询，关联聚类信息和年用电量
-            # 这里需要关联 electricity_data 表获取聚类类别和用电量
-            
-            # 示例数据结构
+            query = UserData.query.filter(
+                UserData.userpoint_x.isnot(None),
+                UserData.userpoint_y.isnot(None),
+            )
+
+            # 聚类类别筛选
+            if cluster_type is not None:
+                query = query.filter(UserData.cluster_type == cluster_type)
+
+            # 边界框过滤（仅当全部四个参数都提供时生效）
+            if all(v is not None for v in [min_lng, max_lng, min_lat, max_lat]):
+                query = query.filter(
+                    UserData.userpoint_x >= min_lng,
+                    UserData.userpoint_x <= max_lng,
+                    UserData.userpoint_y >= min_lat,
+                    UserData.userpoint_y <= max_lat,
+                )
+
+            users = query.limit(limit).all()
+            # print("users:",users)
+
             points = []
-            
-            # TODO: 实际从数据库查询
-            # users = UserData.query.limit(limit).all()
-            # for user in users:
-            #     # 获取该用户的聚类类别和年用电量
-            #     ...
-            
-            # 示例返回数据
-            return [
-                {
-                    "yc_id": "10001",
-                    "lat": 31.2304,
-                    "lng": 121.4737,
-                    "type": "高能耗波动型",
-                    "value": 4500.5
-                }
-            ]
+            for user in users:
+                points.append({
+                    'yc_id':        user.yc_id,
+                    'lng':          user.userpoint_x,   # 经度
+                    'lat':          user.userpoint_y,   # 纬度
+                    'cluster_type': user.cluster_type,  # 0/1/2 或 None
+                    'type':         MapService.CLUSTER_LABELS.get(
+                                        user.cluster_type, '未分类'
+                                    ),
+                    'value':        round(user.total_value, 2)
+                                    if user.total_value is not None else None,
+                })
+
+            return points
+
         except Exception as e:
             raise Exception(f"获取地图数据失败: {str(e)}")
