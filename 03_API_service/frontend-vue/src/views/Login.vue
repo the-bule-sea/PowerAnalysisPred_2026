@@ -72,18 +72,13 @@ const handleLogin = async () => {
   try {
     loading.value = true
     error.value = ''
-    
-    // 这里使用模拟登录进行调试，如果需要真实接口请放开下面注释
-    // const res = await login(loginForm.value)
-    // localStorage.setItem('token', res.data.token)
-    
-    // 模拟成功
-    localStorage.setItem('token', 'mock-token')
-    await new Promise(r => setTimeout(r, 800))
-    
+
+    const res = await login(loginForm.value)
+    localStorage.setItem('token', res.data.token)
+
     router.push('/dashboard')
   } catch (err) {
-    error.value = err.message || '登录失败，请检查网络或账号'
+    error.value = err.message || '登录失败，请检查账号或密码'
   } finally {
     loading.value = false
   }
