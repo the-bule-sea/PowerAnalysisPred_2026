@@ -139,7 +139,10 @@ async function fetchAndRender(clusterType = null) {
     let url = 'http://localhost:5000/api/map/points?limit=1000'
     if (clusterType !== null) url += `&cluster_type=${clusterType}`
 
-    const res = await fetch(url)
+    const token = localStorage.getItem('token')
+    const res = await fetch(url, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
     const json = await res.json()
     if (json.code === 200 && Array.isArray(json.data)) {
       allPoints.value = json.data

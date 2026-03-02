@@ -2,12 +2,14 @@
 地图可视化模块路由
 """
 from flask import request
+from flask_jwt_extended import jwt_required
 from . import map_bp
 from app.utils import success_response, server_error
 from app.services.map_service import MapService
 
 
 @map_bp.route('/points', methods=['GET'])
+@jwt_required()
 def get_map_points():
     """
     获取用户坐标点集

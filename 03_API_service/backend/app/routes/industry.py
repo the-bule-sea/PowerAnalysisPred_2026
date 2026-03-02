@@ -5,6 +5,7 @@
 import os
 import tempfile
 from flask import request
+from flask_jwt_extended import jwt_required
 from . import industry_bp
 from app.utils import success_response, bad_request, server_error
 from app.services.predict_service import PredictService
@@ -12,6 +13,7 @@ from app.services.industry_service import IndustryService
 
 
 @industry_bp.route('/list', methods=['GET'])
+@jwt_required()
 def get_industry_list():
     """获取行业列表 (5.1)"""
     try:
@@ -22,6 +24,7 @@ def get_industry_list():
 
 
 @industry_bp.route('/predict', methods=['POST'])
+@jwt_required()
 def predict_industry():
     """执行用电预测 (5.2)"""
     try:
@@ -48,6 +51,7 @@ def predict_industry():
 
 
 @industry_bp.route('/categories', methods=['GET'])
+@jwt_required()
 def get_industry_categories():
     """
     获取行业分类及其数量 (5.3)
@@ -62,6 +66,7 @@ def get_industry_categories():
 
 
 @industry_bp.route('/upload-csv', methods=['POST'])
+@jwt_required()
 def upload_industry_csv():
     """
     导入行业用电量 CSV (5.4)
@@ -98,6 +103,7 @@ def upload_industry_csv():
 
 
 @industry_bp.route('/timeseries', methods=['GET'])
+@jwt_required()
 def get_industry_timeseries():
     """
     获取行业用电量时间序列 (5.5)
@@ -135,6 +141,7 @@ def get_industry_timeseries():
 
 
 @industry_bp.route('/clear-data', methods=['DELETE'])
+@jwt_required()
 def clear_industry_data():
     """
     清空所有行业数据 (5.6)

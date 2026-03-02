@@ -2,9 +2,11 @@
 聚类分析模块路由
 """
 from . import cluster_bp
+from flask_jwt_extended import jwt_required
 from app.utils import success_response, server_error
 from app.services.cluster_service import ClusterService
 @cluster_bp.route('/centers', methods=['GET'])
+@jwt_required()
 def get_cluster_centers():
     """
     获取聚类中心曲线
@@ -26,6 +28,7 @@ def get_cluster_centers():
     except Exception as e:
         return server_error(f"获取聚类中心数据失败: {str(e)}")
 @cluster_bp.route('/stats', methods=['GET'])
+@jwt_required()
 def get_cluster_stats():
     """
     获取聚类统计分布

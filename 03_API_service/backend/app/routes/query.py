@@ -3,6 +3,7 @@
 """
 import os
 from flask import request
+from flask_jwt_extended import jwt_required
 from werkzeug.utils import secure_filename
 from . import query_bp
 from app.utils import success_response, bad_request, server_error
@@ -10,6 +11,7 @@ from app.services.query_service import QueryService
 
 
 @query_bp.route('/users', methods=['GET'])
+@jwt_required()
 def get_users():
     """
     获取用户列表（分页）
@@ -58,6 +60,7 @@ def get_users():
 
 
 @query_bp.route('/upload-csv', methods=['POST'])
+@jwt_required()
 def upload_csv():
     """
     上传CSV文件并导入用户数据
