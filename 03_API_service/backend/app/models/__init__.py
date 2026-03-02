@@ -8,5 +8,6 @@ db = SQLAlchemy()
 from .user import UserData
 from .electricity import ElectricityData
 from .industry import IndustryData
+from .admin import Admin
 
-__all__ = ['db', 'UserData', 'ElectricityData', 'IndustryData']
+__all__ = ['db', 'UserData', 'ElectricityData', 'IndustryData', 'Admin']
