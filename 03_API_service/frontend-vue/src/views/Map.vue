@@ -21,6 +21,19 @@
           </div>
         </div>
         <div class="toolbar-right">
+          <!-- 地图类型切换 -->
+          <div class="map-type-switcher">
+            <button
+              class="type-btn"
+              :class="{ active: mapType === 'normal' }"
+              @click="setMapType('normal')"
+            >普通地图</button>
+            <button
+              class="type-btn"
+              :class="{ active: mapType === 'satellite' }"
+              @click="setMapType('satellite')"
+            >卫星地图</button>
+          </div>
           <span class="point-count">
             共显示 <strong>{{ displayCount }}</strong> 个用户
           </span>
@@ -89,9 +102,12 @@ const CLUSTER_COLORS = {
 const mapContainer = ref(null)
 const mapStatus = ref('loading')   // loading | ready | error
 const activeFilter = ref('all')
+const mapType = ref('normal')      // normal | satellite
 const allPoints = ref([])          // 原始数据
 const markers = ref([])            // AMap Marker 实例
 let mapInstance = null
+let satelliteLayer = null
+let roadNetLayer = null
 
 const statusText = computed(() => {
   if (mapStatus.value === 'loading') return '地图加载中...'
@@ -124,13 +140,28 @@ function initMap() {
   mapInstance = new window.AMap.Map('amap-container', {
     center: SHANGHAI_CENTER,
     zoom: 11,
-    mapStyle: 'amap://styles/whitesmoke',   // 浅色风格（与平台整体风格一致）
+    mapStyle: 'amap://styles/whitesmoke',
   })
+  // 预创建卫星和路网图层（不加入地图，切换时按需 add/remove）
+  satelliteLayer = new window.AMap.TileLayer.Satellite()
+  roadNetLayer   = new window.AMap.TileLayer.RoadNet()
   mapInstance.on('complete', () => {
     mapStatus.value = 'ready'
-    // 地图加载完成后拉取数据并打点
     fetchAndRender()
   })
+}
+
+// ===== 地图类型切换 =====
+function setMapType(type) {
+  if (!mapInstance || mapType.value === type) return
+  mapType.value = type
+  if (type === 'satellite') {
+    // 叠加卫星影像 + 路网标注（卫星瓦片会覆盖底图）
+    mapInstance.add([satelliteLayer, roadNetLayer])
+  } else {
+    // 移除卫星和路网图层，原始 whitesmoke 底图自动露出
+    mapInstance.remove([satelliteLayer, roadNetLayer])
+  }
 }
 
 // ===== 拉取后端数据 =====
@@ -291,6 +322,9 @@ onUnmounted(() => {
 }
 
 .toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
   font-size: 13px;
   color: var(--text-secondary, #86909c);
 }
@@ -298,6 +332,38 @@ onUnmounted(() => {
 .toolbar-right strong {
   color: var(--text-primary, #1d2129);
   font-weight: 600;
+}
+
+/* ===== 地图类型切换 ===== */
+.map-type-switcher {
+  display: flex;
+  border: 1px solid var(--border-color, #e5e6eb);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.type-btn {
+  padding: 5px 14px;
+  font-size: 13px;
+  background: #fff;
+  border: none;
+  cursor: pointer;
+  color: var(--text-regular, #4e5969);
+  transition: background 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+
+.type-btn + .type-btn {
+  border-left: 1px solid var(--border-color, #e5e6eb);
+}
+
+.type-btn:hover {
+  background: #f2f3f5;
+}
+
+.type-btn.active {
+  background: #165DFF;
+  color: #fff;
 }
 
 /* ===== 地图容器 ===== */
