@@ -59,6 +59,12 @@
 import { ref, onMounted, onUnmounted, shallowRef, nextTick } from 'vue'
 import MainLayout from '@/components/MainLayout.vue'
 import * as echarts from 'echarts'
+import {
+  getIndustryCategories,
+  getIndustryTimeseries,
+  uploadIndustryCsv,
+  clearIndustryData
+} from '@/api/industry'
 
 const pieChartRef = ref(null)
 const lineChart1Ref = ref(null)
@@ -83,22 +89,19 @@ const initCharts = () => {
   if (lineChart2Ref.value && !lineChart2.value) lineChart2.value = echarts.init(lineChart2Ref.value)
 }
 
-// 模拟或真实的数据获取
+// 获取行业分类数据
 const fetchCategories = async () => {
   try {
-    const res = await fetch('http://localhost:5000/api/industry/categories')
-    const json = await res.json()
-    if (json.code === 200 && json.data.level1.length > 0) {
-      console.log("行业分类数据获取成功", json.data)
-      allCategories.value = json.data
-      level1Options.value = json.data.level1.map(item => item.name)
+    const res = await getIndustryCategories()
+    if (res.data.level1.length > 0) {
+      allCategories.value = res.data
+      level1Options.value = res.data.level1.map(item => item.name)
       if (!level1Options.value.includes(selectedLevel1.value)) {
         selectedLevel1.value = level1Options.value[0]
       }
       renderPieChart()
       handleLevel1Change()
     } else {
-      console.log("行业分类数据获取失败", json.data)
       renderMockPieChart()
     }
   } catch (error) {
@@ -171,15 +174,13 @@ const getPieOption = (level1, level2) => {
 }
 
 const handleLevel1Change = async () => {
-  // Find children of selectedLevel1
   const children = allCategories.value.level2.filter(i => i.parent === selectedLevel1.value || level1Options.value.length === 3)
   level2Options.value = children.map(i => i.name)
 
   try {
-    const res = await fetch(`http://localhost:5000/api/industry/timeseries?level=1&name=${encodeURIComponent(selectedLevel1.value)}`)
-    const json = await res.json()
-    if (json.code === 200 && json.data.dates) {
-      renderLineChart1(json.data.dates, json.data.values)
+    const res = await getIndustryTimeseries(1, selectedLevel1.value)
+    if (res.data.dates) {
+      renderLineChart1(res.data.dates, res.data.values)
     } else {
       renderMockLineChart1()
     }
@@ -187,10 +188,9 @@ const handleLevel1Change = async () => {
     renderMockLineChart1()
   }
 
-  // Load level 2 data if available
   if (level2Options.value.length > 0) {
     nextTick(() => {
-      initCharts() // Ensuring lineChart2 is initialized
+      initCharts()
       fetchLevel2Data()
     })
   }
@@ -199,10 +199,9 @@ const handleLevel1Change = async () => {
 const fetchLevel2Data = async () => {
   try {
     const names = level2Options.value.join(',')
-    const res = await fetch(`http://localhost:5000/api/industry/timeseries?level=2&name=${encodeURIComponent(names)}`)
-    const json = await res.json()
-    if (json.code === 200 && json.data.series) {
-      renderLineChart2(json.data.dates, json.data.series)
+    const res = await getIndustryTimeseries(2, names)
+    if (res.data.series) {
+      renderLineChart2(res.data.dates, res.data.series)
     } else {
       renderMockLineChart2()
     }
@@ -295,18 +294,11 @@ const handleClearData = async () => {
   if (!confirm('确定要清空所有已导入的一级和二级行业用电数据吗？此操作不可撤销。')) return
 
   try {
-    const res = await fetch('http://localhost:5000/api/industry/clear-data', {
-      method: 'DELETE'
-    })
-    const json = await res.json()
-    if (json.code === 200) {
-      alert('数据已成功清空')
-      fetchCategories() // 刷新图表，会切换回 Mock 数据
-    } else {
-      alert(`清空失败: ${json.msg}`)
-    }
+    await clearIndustryData()
+    alert('数据已成功清空')
+    fetchCategories()
   } catch (error) {
-    alert('请求失败，请检查后端服务是否已启动')
+    alert(`清空失败: ${error.message || '请检查后端服务是否已启动'}`)
   }
 }
 
@@ -319,20 +311,11 @@ const handleFileUpload = async (event) => {
   formData.append('file', file)
 
   try {
-    const res = await fetch('http://localhost:5000/api/industry/upload-csv', {
-      method: 'POST',
-      body: formData
-    })
-    const json = await res.json()
-    if (json.code === 200) {
-      alert(`导入成功！共处理 ${json.data.total} 行，成功 ${json.data.success_count} 行。`)
-      // Reload charts
-      fetchCategories()
-    } else {
-      alert(`导入失败: ${json.msg}`)
-    }
+    const res = await uploadIndustryCsv(formData)
+    alert(`导入成功！共处理 ${res.data.total} 行，成功 ${res.data.success_count} 行。`)
+    fetchCategories()
   } catch (error) {
-    alert('请求失败，请检查网络或后端状态')
+    alert(`导入失败: ${error.message || '请检查网络或后端状态'}`)
   } finally {
     isUploading.value = false
     event.target.value = ''

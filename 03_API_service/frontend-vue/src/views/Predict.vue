@@ -73,6 +73,7 @@
 import { ref, onMounted, onUnmounted, shallowRef, nextTick } from 'vue'
 import MainLayout from '@/components/MainLayout.vue'
 import * as echarts from 'echarts'
+import { getIndustryList, predictIndustry } from '@/api/industry'
 
 const chartRef = ref(null)
 const chart = shallowRef(null)
@@ -86,18 +87,16 @@ const hasResult = ref(false)
 const trendDesc = ref('')
 const trendDirection = ref('up')
 
-// 1. 获取行业列表 (5.1)
+// 1. 获取行业列表
 const fetchIndustryList = async () => {
   try {
-    const res = await fetch('http://localhost:5000/api/industry/list')
-    const json = await res.json()
-    if (json.code === 200 && json.data.length > 0) {
-      industryList.value = json.data
-      selectedIndustry.value = json.data[0].id
+    const res = await getIndustryList()
+    if (res.data && res.data.length > 0) {
+      industryList.value = res.data
+      selectedIndustry.value = res.data[0].id
     }
   } catch (error) {
     console.error('获取行业列表失败', error)
-    // 降级 Mock
     industryList.value = [
       { id: '住宿业', name: '住宿业' },
       { id: '道路运输业', name: '道路运输业' }
@@ -106,37 +105,27 @@ const fetchIndustryList = async () => {
   }
 }
 
-// 2. 执行预测 (5.2)
+// 2. 执行预测
 const runPredict = async () => {
   isPredicting.value = true
   hasResult.value = false
   trendDesc.value = ''
 
   try {
-    const res = await fetch('http://localhost:5000/api/industry/predict', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        industry_id: selectedIndustry.value,
-        model_type: modelType.value,
-        future_days: futureDays.value
-      })
+    const res = await predictIndustry({
+      industry_id: selectedIndustry.value,
+      model_type: modelType.value,
+      future_days: futureDays.value
     })
-    const json = await res.json()
-
-    if (json.code === 200 && json.data) {
-      const data = json.data
-      trendDesc.value = data.trend_desc
-      trendDirection.value = data.trend_desc.includes('上升') ? 'up' : 'down'
-      hasResult.value = true
-      nextTick(() => {
-        renderChart(data)
-      })
-    } else {
-      alert(`预测失败: ${json.msg}`)
-    }
+    const data = res.data
+    trendDesc.value = data.trend_desc
+    trendDirection.value = data.trend_desc.includes('上升') ? 'up' : 'down'
+    hasResult.value = true
+    nextTick(() => {
+      renderChart(data)
+    })
   } catch (error) {
-    alert('请求失败，请检查后端是否已启动且已导入数据')
+    alert(`预测失败: ${error.message || '请检查后端是否已启动且已导入数据'}`)
   } finally {
     isPredicting.value = false
   }
@@ -162,13 +151,18 @@ const renderChart = (data) => {
   const predictMap = {}
   predictDates.forEach((d, i) => predictMap[d] = predictValues[i])
 
-  // 生成对齐后的 Y 轴数据序列
   const finalActualSeries = allDates.map(d => (actualMap[d] !== undefined ? actualMap[d] : null))
   const finalPredictSeries = allDates.map(d => (predictMap[d] !== undefined ? predictMap[d] : null))
 
+  // 根据模型类型选择不同的颜色和图例名
+  const isRF = modelType.value === 'rf'
+  const predictLabel = isRF ? '随机森林预测用电量' : 'LSTM 预测用电量'
+  const predictColor = isRF ? '#fa8c16' : '#7b9ce1'       // RF 橙黄 / LSTM 蓝紫
+  const predictAreaR = isRF ? '250, 140, 22' : '123, 156, 225'
+
   const option = {
     tooltip: { trigger: 'axis' },
-    legend: { data: ['历史用电量', 'LSTM 预测用电量'], icon: 'circle', top: 0 },
+    legend: { data: ['历史用电量', predictLabel], icon: 'circle', top: 0 },
     grid: { left: '3%', right: '4%', bottom: '15%', top: '15%', containLabel: true },
     xAxis: { type: 'category', boundaryGap: false, data: allDates },
     yAxis: { type: 'value', name: '用电量 (Wh)' },
@@ -181,7 +175,7 @@ const renderChart = (data) => {
         type: 'line',
         data: finalActualSeries,
         smooth: true,
-        itemStyle: { color: '#91cc75' },  // 浅绿色
+        itemStyle: { color: '#91cc75' },
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
             { offset: 0, color: 'rgba(145, 204, 117, 0.5)' },
@@ -190,15 +184,15 @@ const renderChart = (data) => {
         }
       },
       {
-        name: 'LSTM 预测用电量',
+        name: predictLabel,
         type: 'line',
         data: finalPredictSeries,
         smooth: true,
-        itemStyle: { color: '#7b9ce1' }, // 蓝紫色
+        itemStyle: { color: predictColor },
         areaStyle: {
           color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-            { offset: 0, color: 'rgba(123, 156, 225, 0.5)' },
-            { offset: 1, color: 'rgba(123, 156, 225, 0.1)' }
+            { offset: 0, color: `rgba(${predictAreaR}, 0.5)` },
+            { offset: 1, color: `rgba(${predictAreaR}, 0.1)` }
           ])
         }
       }

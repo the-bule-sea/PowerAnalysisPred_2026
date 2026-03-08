@@ -74,6 +74,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import MainLayout from '@/components/MainLayout.vue'
+import { getMapPoints } from '@/api/map'
 
 // ===== 配置 =====
 const AMAP_KEY = '6a951d46f61fb7099c2974de8c55270c'
@@ -167,23 +168,18 @@ function setMapType(type) {
 // ===== 拉取后端数据 =====
 async function fetchAndRender(clusterType = null) {
   try {
-    let url = 'http://localhost:5000/api/map/points?limit=1000'
-    if (clusterType !== null) url += `&cluster_type=${clusterType}`
+    const params = { limit: 1000 }
+    if (clusterType !== null) params.cluster_type = clusterType
 
-    const token = localStorage.getItem('token')
-    const res = await fetch(url, {
-      headers: { 'Authorization': `Bearer ${token}` }
-    })
-    const json = await res.json()
-    if (json.code === 200 && Array.isArray(json.data)) {
-      allPoints.value = json.data
-      renderMarkers(json.data)
+    const res = await getMapPoints(params)
+    if (Array.isArray(res.data)) {
+      allPoints.value = res.data
+      renderMarkers(res.data)
     } else {
-      console.warn('地图数据返回异常:', json)
+      console.warn('地图数据返回异常:', res)
     }
   } catch (e) {
     console.warn('地图数据拉取失败（后端可能未启动）:', e.message)
-    // 后端未连接时不影响地图展示，仅打印警告
   }
 }
 
